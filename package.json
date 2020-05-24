@@ -32,6 +32,7 @@
     "release:major": "npm version major && npm publish",
     "coverage": "jest",
     "test": "npm run coverage",
+    "test:watch": "jest --watch",
     "build": "tsc"
   },
   "engines": {
@@ -41,12 +42,7 @@
     "@feathersjs/commons": "^4.0.0",
     "@feathersjs/errors": "^3.3.4",
     "arangojs": "^6.9.0",
-    "lodash.get": "^4.4.2",
-    "lodash.isboolean": "^3.0.3",
-    "lodash.isempty": "^4.4.0",
-    "lodash.isnumber": "^3.0.3",
-    "lodash.isstring": "^4.0.1",
-    "lodash.omit": "^4.5.0",
+    "lodash": "^4.17.15",
     "uberproto": "^2.0.4",
     "uuid": "^3.3.2"
   },

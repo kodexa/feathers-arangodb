@@ -1,8 +1,7 @@
 import { NotFound } from "@feathersjs/errors";
 import { Database, DocumentCollection } from "arangojs";
 import { LoadBalancingStrategy } from "arangojs/lib/async/connection";
-import { AqlQuery } from "arangojs/lib/cjs/aql-query";
-import { ArangoError } from "arangojs/lib/cjs/error";
+import { AqlQuery, aql } from "arangojs/lib/cjs/aql-query";
 import { Graph } from "arangojs/lib/cjs/graph";
 import {
   Application,
@@ -132,8 +131,7 @@ export class DbService {
 
     if (options.graph instanceof Promise) {
       this._graphPromise = options.graph;
-    }
-    else if (options.graph instanceof Graph) {
+    } else if (options.graph instanceof Graph) {
       this._graph = options.graph;
     }
 
@@ -151,7 +149,14 @@ export class DbService {
   }
 
   public async connect(): Promise<IConnectResponse> {
-    const { authType, username, password, token, graph, dbConfig } = this.options;
+    const {
+      authType,
+      username,
+      password,
+      token,
+      graph,
+      dbConfig
+    } = this.options;
     if (this._database === undefined && this._databasePromise) {
       this._database = await this._databasePromise;
     }
@@ -306,17 +311,17 @@ export class DbService {
     const { database, collection } = await this.connect();
     params = this._injectPagination(params);
     const queryBuilder = new QueryBuilder(params);
-    const colVar = queryBuilder.addBindVar(collection.name, true);
-    const query: AqlQuery = {
-      query: `
-        FOR doc IN ${colVar}
-          ${queryBuilder.filter}
-          ${queryBuilder.sort}
-          ${queryBuilder.limit}
-          ${queryBuilder.returnFilter}
-      `,
-      bindVars: queryBuilder.bindVars
-    };
+    const query = aql.join(
+      [
+        aql`FOR doc in ${collection}`,
+        queryBuilder.filter,
+        queryBuilder.sort,
+        queryBuilder.limit,
+        queryBuilder.returnFilter
+      ],
+      " "
+    );
+
     const result = (await this._returnMap(
       database,
       query,
@@ -340,15 +345,15 @@ export class DbService {
   public async get(id: Id, params: Params) {
     const { database, collection } = await this.connect();
     const queryBuilder = new QueryBuilder(params);
-    const query: AqlQuery = {
-      query: `
-        FOR doc IN ${queryBuilder.addBindVar(collection.name, true)}
-          FILTER doc._key == ${queryBuilder.addBindVar(id)}
-          ${queryBuilder.filter}
-          ${queryBuilder.returnFilter}
-      `,
-      bindVars: queryBuilder.bindVars
-    };
+    const query: AqlQuery = aql.join(
+      [
+        aql`FOR doc IN ${collection}`,
+        aql`FILTER doc._key == ${id}`,
+        queryBuilder.filter,
+        queryBuilder.returnFilter
+      ],
+      " "
+    );
     return this._returnMap(database, query, `No record found for id '${id}'`);
   }
 
@@ -359,15 +364,12 @@ export class DbService {
     data = this.fixKeySend(data);
     const { database, collection } = await this.connect();
     const queryBuilder = new QueryBuilder(params);
-    const query: AqlQuery = {
-      query: `
-        FOR item IN ${queryBuilder.addBindVar(data)}
-          INSERT item IN ${queryBuilder.addBindVar(collection.name, true)}
+
+    const query = aql`
+        FOR item IN ${data}
+          INSERT item IN ${collection}
           let doc = NEW
-          ${queryBuilder.returnFilter}
-      `,
-      bindVars: queryBuilder.bindVars
-    };
+        ${queryBuilder.returnFilter}`;
     return this._returnMap(database, query);
   }
 
@@ -382,29 +384,29 @@ export class DbService {
     let query: AqlQuery;
     if (ids.length > 0 && (ids[0] != null || ids[0] != undefined)) {
       const queryBuilder = new QueryBuilder(params, "doc", "changed");
-      const colRef = queryBuilder.addBindVar(collection.name, true);
-      query = {
-        query: `
-        FOR doc IN ${queryBuilder.addBindVar(ids)}
-          ${fOpt} doc WITH ${queryBuilder.addBindVar(data)} IN ${colRef}
-          LET changed = NEW
-          ${queryBuilder.returnFilter}
-      `,
-        bindVars: queryBuilder.bindVars
-      };
+      query = aql.join(
+        [
+          aql`FOR doc IN ${ids}`,
+          aql.literal(`${fOpt}`),
+          aql`doc WITH ${data} IN ${collection}`,
+          aql`LET changed = NEW`,
+          queryBuilder.returnFilter
+        ],
+        " "
+      );
     } else {
       const queryBuilder = new QueryBuilder(params, "doc", "changed");
-      const colRef = queryBuilder.addBindVar(collection.name, true);
-      query = {
-        query: `
-        FOR doc IN ${colRef}
-          ${queryBuilder.filter}
-          ${fOpt} doc WITH ${queryBuilder.addBindVar(data)} IN ${colRef}
-          LET changed = NEW
-          ${queryBuilder.returnFilter}
-      `,
-        bindVars: queryBuilder.bindVars
-      };
+      query = aql.join(
+        [
+          aql`FOR doc IN ${collection}`,
+          queryBuilder.filter,
+          aql.literal(`${fOpt}`),
+          aql`doc WITH ${data} IN ${collection}`,
+          aql`LET changed = NEW`,
+          queryBuilder.returnFilter
+        ],
+        " "
+      );
     }
     return this._returnMap(database, query, `No record found for id '${id}'`);
   }
@@ -440,28 +442,24 @@ export class DbService {
     let query: AqlQuery;
     if (id && (!Array.isArray(id) || (Array.isArray(id) && id.length > 0))) {
       const queryBuilder = new QueryBuilder(params, "doc", "removed");
-      query = {
-        query: `
-        FOR doc IN ${queryBuilder.addBindVar(ids)}
-          REMOVE doc IN ${queryBuilder.addBindVar(collection.name, true)}
+      query = aql`
+        FOR doc IN ${ids}
+          REMOVE doc IN ${collection}
           LET removed = OLD
           ${queryBuilder.returnFilter}
-      `,
-        bindVars: queryBuilder.bindVars
-      };
+      `;
     } else {
       const queryBuilder = new QueryBuilder(params, "doc", "removed");
-      const colRef = queryBuilder.addBindVar(collection.name, true);
-      query = {
-        query: `
-        FOR doc IN ${colRef}
-          ${queryBuilder.filter}
-          REMOVE doc IN ${colRef}
-          LET removed = OLD
-          ${queryBuilder.returnFilter}
-      `,
-        bindVars: queryBuilder.bindVars
-      };
+      query = aql.join(
+        [
+          aql`FOR doc IN ${collection}`,
+          queryBuilder.filter,
+          aql`REMOVE doc IN ${collection}`,
+          aql`LET removed = OLD`,
+          queryBuilder.returnFilter
+        ],
+        " "
+      );
     }
 
     return this._returnMap(database, query);
