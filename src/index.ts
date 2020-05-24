@@ -10,7 +10,7 @@ import {
   Paginated,
   Params,
   Service
-} from "feathersjs__feathers";
+} from "@feathersjs/feathers";
 import _isEmpty from "lodash/isempty";
 import isString from "lodash/isstring";
 import omit from "lodash/omit";
