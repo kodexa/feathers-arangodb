@@ -242,7 +242,14 @@ describe(`Feathers common tests, ${serviceName} service with \\${idProp}\\ id pr
     beforeEach(async () => {
       const bob = await service.create({ name: "Bob", age: 25 });
       _ids.Bob = bob[idProp];
-      const alice = await service.create({ name: "Alice", age: 19 });
+      const alice = await service.create({
+        name: "Alice",
+        age: 19,
+        address: {
+          line1: "123 Some St.",
+          city: "Sommerville"
+        }
+      });
       _ids.Alice = alice[idProp];
     });
 
@@ -331,6 +338,22 @@ describe(`Feathers common tests, ${serviceName} service with \\${idProp}\\ id pr
         expect(result.length).toEqual(1);
         expect(result[0].name).toEqual("Alice");
         expect(result[0].age).toBeUndefined();
+      });
+
+      it("can $select nested property", async () => {
+        const params = {
+          query: {
+            name: "Alice",
+            $select: ["address.line1", "name", "address.city"]
+          }
+        };
+        const result = <any[]>await service.find(params);
+
+        expect(result.length).toEqual(1);
+        expect(result[0].name).toEqual("Alice");
+        expect(result[0].age).toBeUndefined();
+        expect(result[0].address.line1).toEqual("123 Some St.");
+        expect(result[0].address.city).toEqual("Sommerville");
       });
 
       it("can $or", async () => {

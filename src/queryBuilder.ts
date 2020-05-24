@@ -2,7 +2,7 @@ import _isNumber from "lodash/isnumber";
 import _isBoolean from "lodash/isboolean";
 import _isObject from "lodash/isobject";
 import _isString from "lodash/isString";
-import _omit from "lodash.omit";
+import _omit from "lodash/omit";
 import _get from "lodash/get";
 import _set from "lodash/set";
 import _isEmpty from "lodash/isempty";
@@ -45,26 +45,43 @@ export class QueryBuilder {
     this.create(params, docName, returnDocName);
   }
 
-  projectRecursive(o: object): string {
+  projectRecursive(o: object): AqlValue {
     const result = Object.keys(o).map((field: string) => {
       const v: any = _get(o, field);
-      return `"${field}": ${_isObject(v) ? this.projectRecursive(v) : v}`;
+      return aql.join(
+        [
+          aql.literal(`"${field}":`),
+          _isObject(v)
+            ? aql.join([
+                aql.literal("{"),
+                this.projectRecursive(v),
+                aql.literal("}")
+              ])
+            : aql.literal(`${v}`)
+        ],
+        " "
+      );
     });
 
-    return `{ ${result.join(",\n")} }`;
+    return aql.join(result, ", ");
   }
 
   selectBuilder(params: Params, docName: string = "doc"): AqlQuery {
     let filter = aql.join([aql.literal(`RETURN ${docName}`)]);
     const select = _get(params, "query.$select", null);
     if (select && select.length > 0) {
-      select.unshift("_key");
-      const selected = aql.join(
-        select.map((key: string) => aql.literal(`"${key}": ${docName}.${key}`)),
-        ", "
-      );
+      var ret = {};
+      _set(ret, "_key", docName + "._key");
+      select.forEach((fieldName: string) => {
+        _set(ret, fieldName, docName + "." + fieldName);
+      });
       filter = aql.join(
-        [aql.literal(`RETURN {`), selected, aql.literal(`}`)],
+        [
+          aql`RETURN`,
+          aql.literal("{"),
+          this.projectRecursive(ret),
+          aql.literal("}")
+        ],
         " "
       );
     }

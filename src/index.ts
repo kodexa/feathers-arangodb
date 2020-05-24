@@ -11,9 +11,9 @@ import {
   Params,
   Service
 } from "feathersjs__feathers";
-import _isEmpty from "lodash.isempty";
-import isString from "lodash.isstring";
-import omit from "lodash.omit";
+import _isEmpty from "lodash/isempty";
+import isString from "lodash/isstring";
+import omit from "lodash/omit";
 import uuid from "uuid/v4";
 import { AutoDatabse } from "./auto-database";
 import { QueryBuilder } from "./queryBuilder";
@@ -257,7 +257,7 @@ export class DbService {
     }
     return aData.map((item: any) => {
       const id = item[this._id] || uuid();
-      return { _key: id, ...omit(item, "_id", "_rev", "_key") };
+      return { _key: id, ...(omit(item, "_id", "_rev", "_key") as Partial<T>) };
     }) as Array<Partial<T>>;
   }
 
