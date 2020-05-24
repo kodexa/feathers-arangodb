@@ -1,5 +1,5 @@
 import feathers from "@feathersjs/feathers";
-import { Application, Service } from "feathersjs__feathers";
+import { Application } from "@feathersjs/feathers";
 import { NotFound } from "@feathersjs/errors";
 import ArangoDbService, { IArangoDbService, AUTH_TYPES } from "../src";
 import { AutoDatabse } from "../src/auto-database";
@@ -13,7 +13,7 @@ describe(`Feathers common tests, ${serviceName} service with \\${idProp}\\ id pr
   const testCollection = "TEST_COL";
   const testUser = "root";
   const testPass = "root";
-  let app: Application;
+  let app: Application<any>;
   let service: IArangoDbService<any>;
   let _ids: any = {};
 

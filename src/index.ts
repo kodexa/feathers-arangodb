@@ -14,7 +14,7 @@ import {
 import _isEmpty from "lodash/isempty";
 import isString from "lodash/isstring";
 import omit from "lodash/omit";
-import uuid from "uuid/v4";
+import { uuid } from "uuidv4";
 import { AutoDatabse } from "./auto-database";
 import { QueryBuilder } from "./queryBuilder";
 import { GraphVertexCollection } from "arangojs/lib/cjs/graph";
