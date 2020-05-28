@@ -1,11 +1,11 @@
-import _isNumber from "lodash/isnumber";
-import _isBoolean from "lodash/isboolean";
-import _isObject from "lodash/isobject";
+import _isNumber from "lodash/isNumber";
+import _isBoolean from "lodash/isBoolean";
+import _isObject from "lodash/isObject";
 import _isString from "lodash/isString";
 import _omit from "lodash/omit";
 import _get from "lodash/get";
 import _set from "lodash/set";
-import _isEmpty from "lodash/isempty";
+import _isEmpty from "lodash/isEmpty";
 import { Params } from "@feathersjs/feathers";
 import { aql } from "arangojs";
 import { AqlQuery, AqlValue } from "arangojs/lib/cjs/aql-query";

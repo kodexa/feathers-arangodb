@@ -11,8 +11,8 @@ import {
   Params,
   Service
 } from "@feathersjs/feathers";
-import _isEmpty from "lodash/isempty";
-import isString from "lodash/isstring";
+import _isEmpty from "lodash/isEmpty";
+import isString from "lodash/isString";
 import omit from "lodash/omit";
 import { uuid } from "uuidv4";
 import { AutoDatabse } from "./auto-database";
